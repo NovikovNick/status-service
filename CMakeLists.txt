@@ -15,6 +15,20 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 add_executable(${PROJECT_NAME} "src/main.cpp")
 target_link_libraries(${PROJECT_NAME} PRIVATE hiredis)
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+
+# UTILITY
+
+find_program(DOCKER_COMPOSE_EXECUTABLE docker-compose)
+if(NOT DOCKER_COMPOSE_EXECUTABLE)
+    message(FATAL_ERROR "Unable to find docker-compose!")
+endif()
+
+find_program(DOCKER_EXECUTABLE docker)
+if(NOT DOCKER_EXECUTABLE)
+    message(FATAL_ERROR "Unable to find docker!")
+endif()
+
+add_custom_target(build_docker
     COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_BINARY_DIR}/${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/docker/${PROJECT_NAME}
+    COMMAND ${DOCKER_EXECUTABLE} build -t metalheart/${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/docker
 )
