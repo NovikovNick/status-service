@@ -11,7 +11,7 @@ add_definitions(-DDEBUG)
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
@@ -19,6 +19,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 add_executable(${PROJECT_NAME} "src/main.cc" "src/redis_adapter.cc")
 target_link_libraries(${PROJECT_NAME} PRIVATE hiredis)
 
+
+add_executable("server" "src/tcp-server.cc" "src/server/server.cc" "src/server/connection.cc")
+add_executable("client" "src/tcp-client.cc")
 
 # UTILITY
 
