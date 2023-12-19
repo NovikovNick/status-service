@@ -1,10 +1,36 @@
 version: "3.3"
+
 services:
   redis:
-    image: redis:7.0.14-alpine
+    image: redis/redis-stack:latest
     ports:
       - '6379:6379'
-    network_mode: "host"
+      - '8001:8001'
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+  grafana:
+    image: grafana/grafana-oss
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+  redis_exporter:
+    image: oliver006/redis_exporter
+    command: -redis.addr redis://redis:6379
+    ports:
+      - '9121:9121'
+    depends_on:
+      - redis
+      - prometheus
   # status-service:
   #   image: metalheart/status-service:latest
   #   depends_on:
