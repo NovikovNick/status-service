@@ -6,6 +6,15 @@ services:
     ports:
       - '6379:6379'
       - '8001:8001'
+  
+  telegraf:
+    image: telegraf:1.8
+    volumes:
+     - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    ports:
+     - 9100:9100
+     - 8186:8186
+  
   prometheus:
     image: prom/prometheus
     ports:
@@ -14,6 +23,8 @@ services:
       - ./prometheus/:/etc/prometheus/
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+    depends_on:
+      - telegraf
   grafana:
     image: grafana/grafana-oss
     ports:
@@ -31,6 +42,18 @@ services:
     depends_on:
       - redis
       - prometheus
+  # node_exporter:
+  #   image: quay.io/prometheus/node-exporter:latest
+  #   command:
+  #     - '--path.rootfs=/host'
+  #   network_mode: host
+  #   pid: host
+  #   restart: unless-stopped
+  #   volumes:
+  #     - '/:/host:ro,rslave'
+  #   depends_on:
+  #     - prometheus
+
   # status-service:
   #   image: metalheart/status-service:latest
   #   depends_on:
