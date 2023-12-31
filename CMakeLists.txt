@@ -16,12 +16,17 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 
-add_executable(${PROJECT_NAME} "src/main.cc" "src/redis_adapter.cc")
+add_executable(${PROJECT_NAME} "src/main.cc" "src/redis/redis_adapter.cc")
 target_link_libraries(${PROJECT_NAME} PRIVATE hiredis)
 
 
-add_executable("server" "src/tcp-server.cc" "src/server/server.cc" "src/server/connection.cc")
-add_executable("client" "src/tcp-client.cc")
+add_executable("server" 
+    "src/tcp-server.cc" 
+    "src/server/dispatcher.cc"
+    "src/server/router.cc"
+    "src/server/tcp/connection_pool.cc"
+    "src/server/tcp/connection.cc"
+    "src/server/service/state_service.cc")
 
 # UTILITY
 

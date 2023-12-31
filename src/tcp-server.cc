@@ -1,24 +1,24 @@
+#include "./server/dispatcher.h"
+#include "./server/http/prometheus_http_handler.h"
+#include "./server/http/sample_http_handler.h"
+#include "./server/router.h"
+#include "./server/service/state_service.h"
+#include "./server/tcp/connection_pool.h"
 
-#include <iostream>
-#include <thread>
+int main(int argc, char* argv[]) {
+  m8t::ConnectionPool connection_pool{8880};
 
-#include "./server/server.h"
+  auto& state_service      = m8t::StateService::instance();
+  auto  prometheus_handler = std::make_unique<m8t::PrometheusHttpHandler>(state_service);
+  auto  sample_handler     = std::make_unique<m8t::SampleHttpHandler>();
 
-// Server side
-int main(int argc, char *argv[]) {
-  // for the server, we only need to specify a port number
-  if (argc != 2) {
-    std::cerr << "Usage: port" << std::endl;
-    exit(0);
-  }
-  // grab the port number
-  int port = atoi(argv[1]);
+  m8t::Router router;
+  router.addHandler("/metrics", prometheus_handler.get());
+  router.addHandler("/sample", sample_handler.get());
 
-  tcp::Server server(port);
-  while (1) {
-    auto conn = server.acceptConnection();
-    std::thread t([conn = std::move(conn)]() mutable { conn.handle(); });
-    t.detach();
-  }
+  m8t::Dispatcher server(router, connection_pool);
+
+  server.start();
+
   return 0;
 }

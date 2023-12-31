@@ -25,6 +25,6 @@ void redis::sampleDistributedLock() {
   auto lock3 = std::move(lock2);
 
   lock1.try_lock();
-  //lock2.try_lock();
+  // lock2.try_lock();
   lock3.try_lock();
 }

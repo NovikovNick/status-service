@@ -20,9 +20,9 @@ void debug(const char *format, ...) {
 }
 
 class DistributedLock {
-  int key_;
+  int           key_;
   redisContext *ctx_;
-  bool locked_;
+  bool          locked_;
 
  public:
   DistributedLock(redisContext *ctx, int key)
@@ -30,15 +30,15 @@ class DistributedLock {
         ctx_(ctx),         //
         locked_(false){};  //
 
-  DistributedLock(const DistributedLock &) = delete;
+  DistributedLock(const DistributedLock &)            = delete;
   DistributedLock &operator=(const DistributedLock &) = delete;
 
   DistributedLock(DistributedLock &&other) noexcept { *this = std::move(other); };
 
   DistributedLock &operator=(DistributedLock &&other) noexcept {
     if (this == &other) return *this;
-    this->key_ = std::exchange(other.key_, 0);
-    this->ctx_ = std::exchange(other.ctx_, nullptr);
+    this->key_    = std::exchange(other.key_, 0);
+    this->ctx_    = std::exchange(other.ctx_, nullptr);
     this->locked_ = std::exchange(other.locked_, false);
     return *this;
   };

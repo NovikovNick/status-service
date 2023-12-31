@@ -1,13 +1,18 @@
-#include <chrono>
+#include <unistd.h>
+
+#include <cstdio>
+#include <format>
 #include <iostream>
-#include <thread>
-#include <vector>
+#include <unordered_map>
 
-
+#include "redis/redis_adapter.h"
 
 int main(int argc, char *argv[]) {
-  printf("[main]:... start\n");
+  pid_t pid = getpid();
+  std::cout << std::format("[{}]:... start\n", pid);
 
-  printf("[main]:... end\n");
+  // redis::sampleDistributedLock();
+
+  std::cout << std::format("[{}]:... end\n", pid);
   return 0;
 }
