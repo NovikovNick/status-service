@@ -8,7 +8,7 @@ namespace m8t {
 
 constexpr int kBufCapacity = 4096;
 using Buffer               = std::array<char, kBufCapacity>;
-using Request              = std::function<void(std::array<char, kBufCapacity>&)>;
+using Request = std::function<void(std::array<char, kBufCapacity>&)>;
 
 class Handler {
  public:

@@ -9,7 +9,8 @@
 
 namespace m8t {
 
-ConnectionPool::ConnectionPool(int port) {  // setup a socket and connection tools
+ConnectionPool::ConnectionPool(int port) {
+  // setup a socket and connection tools
   sockaddr_in servAddr;
   bzero((char *)&servAddr, sizeof(servAddr));
   servAddr.sin_family      = AF_INET;
@@ -25,7 +26,9 @@ ConnectionPool::ConnectionPool(int port) {  // setup a socket and connection too
   }
 
   // bind the socket to its local address
-  int bindStatus = bind(socket_, (struct sockaddr *)&servAddr, sizeof(servAddr));
+  int bindStatus = bind(socket_,  //
+                        (struct sockaddr *)&servAddr,
+                        sizeof(servAddr));
   if (bindStatus < 0) {
     std::cerr << "Error binding socket to local address" << std::endl;
     exit(0);
@@ -34,7 +37,7 @@ ConnectionPool::ConnectionPool(int port) {  // setup a socket and connection too
 
 Connection ConnectionPool::acceptConnection() {
   // listen for up to 5 requests at a time
-  listen(socket_, 5);
+  listen(socket_, 0);
   // receive a request from client using accept
   // we need a new address to connect with the client
   sockaddr_in newSockAddr;

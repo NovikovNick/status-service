@@ -8,7 +8,8 @@ class SampleHttpHandler : public Handler {
  public:
   void handle(Buffer& buf) const {
     std::string data;
-    { data += "It works...\n"; }
+
+    data += "It works...\n";
 
     std::string packet = std::format(
         "HTTP/1.1 200 OK\r\n"

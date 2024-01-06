@@ -2,9 +2,9 @@ version: "3.3"
 
 services:
 
-############################################################
-#                    DATASOURCES                           #
-############################################################
+  ############################################################
+  #                    DATASOURCES                           #
+  ############################################################
 
   redis:
     image: redis/redis-stack:latest
@@ -12,9 +12,24 @@ services:
       - '6379:6379'
       - '8001:8001'
 
-############################################################
-#                     MONITORING                           #
-############################################################
+  nginx:
+    build:
+      context: ./nginx
+      target: dev
+    image: nginx:1.25.3-alpine3.18
+    container_name: nginx-www
+    restart: always
+    volumes:
+      - ./html:/usr/share/nginx/html:rw
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./nginx/log:/var/log/nginx
+    ports:
+      - 80:80
+      - 443:443
+
+  ############################################################
+  #                     MONITORING                           #
+  ############################################################
   redis_exporter:
     image: oliver006/redis_exporter
     command: -redis.addr redis://redis:6379
@@ -23,17 +38,36 @@ services:
     depends_on:
       - redis
 
-  node_exporter:
-    image: quay.io/prometheus/node-exporter:latest
-    command:
-      - '--path.rootfs=/host'
-    network_mode: host
-    pid: host
+  node-exporter:
+    image: prom/node-exporter:latest
     restart: unless-stopped
     volumes:
-      - '/:/host:ro,rslave'
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      #- '--collector.systemd'
+      - '--collector.processes'
+    ports:
+      - '9100:9100'
     depends_on:
       - prometheus
+
+  nginx-prometheus-exporter:
+    image: nginx/nginx-prometheus-exporter:1.0
+    container_name: prometheus-nginx-exporter
+    restart: always
+    env_file: .env
+    command:
+      - --nginx.scrape-uri=https://nginx/stub_status
+    ports:
+      - '9113:9113'
+    depends_on:
+      - nginx
 
   prometheus:
     image: prom/prometheus
@@ -53,7 +87,6 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       - prometheus
-
   # status-service:
   #   image: metalheart/status-service:latest
   #   depends_on:

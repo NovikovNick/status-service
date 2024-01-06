@@ -1,3 +1,4 @@
 docker/status-service
 build
 .vscode
+*.log
