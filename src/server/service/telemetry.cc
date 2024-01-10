@@ -1,6 +1,7 @@
 #include "telemetry.h"
 
 #include <sys/resource.h>
+#include <telemetry/api.h>
 #include <unistd.h>
 
 #include <chrono>
@@ -15,8 +16,6 @@ struct NodeStats {
   double       cpu_time_total_seconds = 0.0;
   unsigned int uptime_seconds         = 0;
 };
-
-std::unordered_map<std::string, std::shared_ptr<telemetry::Metric>> metrics_;
 
 NodeStats getStats() {
   NodeStats stats;
@@ -77,73 +76,30 @@ NodeStats getStats() {
 
   return stats;
 }
-
-template <typename T, typename... Args>
-T& getMetricOrCreateIfNotExist(std::string_view title,
-                               std::string_view description,
-                               Args&&... args) {
-  std::string key{title};
-  if (auto it = metrics_.find(key); it != metrics_.end()) {
-    auto& metric = *(it->second.get());
-    return static_cast<T&>(metric);
-  } else {
-    auto metric   = std::make_shared<T>(title,  //
-                                      description,
-                                      std::forward<Args>(args)...);
-    metrics_[key] = metric;
-    return static_cast<T&>(*(metric.get()));
-  }
-}
 };  // namespace
 
 namespace m8t {
 
 namespace telemetry {
 
-::telemetry::Gauge& gauge(std::string_view title,
-                          std::string_view description) {
-  return getMetricOrCreateIfNotExist<::telemetry::Gauge>(title, description);
-}
-
-template <typename... Q>
-::telemetry::Summary& summary(std::string_view          title,
-                              std::string_view          description,
-                              std::chrono::milliseconds observation_time,
-                              Q&&... quantiles) {
-  return getMetricOrCreateIfNotExist<::telemetry::Summary>(
-      title,  //
-      description,
-      observation_time,
-      std::forward<Q>(quantiles)...);
-}
-
 void collect(std::string& out) {
   auto [rss, cpu_time_total_seconds, uptime_seconds] = getStats();
 
-  gauge("status_service_uptime_in_seconds",  //
-        "uptime_in_seconds metric")
-      .set(uptime_seconds);
+  ::telemetry::gauge()
+      .name("status_service_uptime_in_seconds")  //
+      .description("uptime_in_seconds metric")
+      .measure(uptime_seconds);
+  ::telemetry::gauge()
+      .name("status_service_rss_bytes")  //
+      .description("current memory consumtions in bytes")
+      .measure(rss);
+  ::telemetry::gauge()
+      .name("status_service_cpu_seconds_total")  //
+      .description("Total user and system CPU time spent.")
+      .measure(cpu_time_total_seconds);
 
-  gauge("status_service_rss_bytes",  //
-        "current memory consumtions in bytes")
-      .set(rss);
-
-  gauge("status_service_cpu_seconds_total",
-        "Total user and system CPU time spent.")
-      .set(cpu_time_total_seconds);
-
-  for (auto [title, metric] : metrics_) {
-    metric->collect(out);
-  }
+  ::telemetry::collect(out);
 };
 }  // namespace telemetry
-
-template ::telemetry::Summary& telemetry::summary(std::string_view,  //
-                                                  std::string_view,
-                                                  std::chrono::milliseconds,
-                                                  double&&,
-                                                  double&&,
-                                                  double&&,
-                                                  double&&);
 
 }  // namespace m8t

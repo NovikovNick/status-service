@@ -2,13 +2,9 @@
 #define METALHEART_TELEMETRY_TYPES_H
 
 #include <atomic>
-#include <cassert>
-#include <map>
-#include <mutex>
-#include <queue>
-#include <set>
+#include <memory>
 #include <string>
-#include <vector>
+#include <unordered_map>
 
 namespace telemetry {
 
@@ -26,76 +22,70 @@ class Metric {
   virtual ~Metric()                      = default;
 };
 
-class Counter final : public Metric {
-  std::atomic<uint64_t> value_;
-
- public:
-  Counter(std::string_view title, std::string_view description)
-      : Metric(title, description), value_(0){};
-
-  void increment();
-  void add(uint64_t value);
-
-  virtual void collect(std::string& out) override;
+struct MetricKey {
+  std::string                                  name;
+  std::string                                  description;
+  std::unordered_map<std::string, std::string> tags;
 };
 
-class Gauge final : public Metric {
-  std::atomic<double> value_;
+class MetricRegistry {
+  MetricRegistry()                                 = default;
+  MetricRegistry(const MetricRegistry&)            = delete;
+  MetricRegistry& operator=(const MetricRegistry&) = delete;
 
  public:
-  Gauge(std::string_view title, std::string_view description)
-      : Metric(title, description), value_(0.0){};
-
-  void set(double value);
-
-  virtual void collect(std::string& out) override;
+  std::unordered_map<std::string, std::shared_ptr<Metric>> metrics_;
+  static MetricRegistry&                                   instance() {
+    static MetricRegistry inst;
+    return inst;
+  }
 };
 
-class Histogram final : public Metric {
-  std::mutex                mutex_;
-  double                    sum;
-  std::map<double, int64_t> buckets_;
+template <typename Metric, typename Self>
+struct MetricBuilder {
+  MetricKey key_;
 
  public:
-  template <typename... B>
-  Histogram(std::string_view title, std::string_view description, B... buckets)
-      : Metric(title, description), sum(0) {
-    static_assert((std::is_same<B, double>::value && ...));
-    ((buckets_[buckets] = 0), ...);
+  Self& name(std::string_view name) {
+    key_.name = name;
+    return static_cast<Self&>(*this);
   };
 
-  void observe(double value);
-
-  virtual void collect(std::string& out) override;
-};
-
-class Summary final : public Metric {
-  using Clock     = std::chrono::steady_clock;
-  using Timepoint = Clock::time_point;
-
-  std::chrono::milliseconds observation_time_;
-  std::mutex                mutex_;
-  std::multiset<double>     values_;
-  std::queue<std::pair<Timepoint, std::set<double>::iterator>> refs_;
-  std::vector<double>                                          quantiles_;
-
- public:
-  template <typename... Q>
-  Summary(std::string_view          title,
-          std::string_view          description,
-          std::chrono::milliseconds observation_time,
-          Q... quantiles)
-      : Metric(title, description),  //
-        observation_time_(observation_time) {
-    static_assert((std::is_same<Q, double>::value && ...));
-    assert(((quantiles >= 0 && quantiles <= 1) && ...));
-    (quantiles_.push_back(quantiles), ...);
+  Self& description(std::string_view description) {
+    key_.description = description;
+    return static_cast<Self&>(*this);
   };
 
-  void observe(double value);
+  Self& tag(std::string_view key, std::string_view value) {
+    key_.tags[std::string{key}] = value;
+    return static_cast<Self&>(*this);
+  };
 
-  virtual void collect(std::string& out) override;
+  // Metric& ifNotExist(std::function<void(Self&)> cb) {
+  //   cb(static_cast<Self&>(*this));
+  //   return Metric{};
+  // };
+
+  virtual void measure(double value) = 0;
+
+  virtual ~MetricBuilder() = default;
+
+ protected:
+  template <typename... Args>
+  Metric& build(Args&&... args) {
+    // todo: refactoring
+    auto& metrics = MetricRegistry::instance().metrics_;
+
+    std::string key{key_.name};
+    if (auto it = metrics.find(key); it != metrics.end()) {
+      return static_cast<Metric&>(*(it->second.get()));
+    } else {
+      metrics[key] = std::make_shared<Metric>(key_.name,  //
+                                              key_.description,
+                                              std::forward<Args>(args)...);
+      return static_cast<Metric&>(*(metrics[key].get()));
+    }
+  };
 };
-
 }  // namespace telemetry
 #endif  // METALHEART_TELEMETRY_TYPES_H

@@ -1,7 +1,7 @@
+#include "gauge.h"
+
 #include <cmath>
 #include <format>
-
-#include "types.h"
 
 namespace telemetry {
 

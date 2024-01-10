@@ -1,7 +1,7 @@
+#include "summary.h"
+
 #include <cmath>
 #include <format>
-
-#include "types.h"
 
 namespace telemetry {
 
@@ -65,4 +65,5 @@ void Summary::collect(std::string& out) {
   out += std::format("{}_sum {}\n", title_, sum);
   out += std::format("{}_count {}\n", title_, count);
 };
+
 }  // namespace telemetry

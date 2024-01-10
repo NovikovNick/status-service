@@ -1,7 +1,8 @@
+#include "histogram.h"
+
+#include <cassert>
 #include <cmath>
 #include <format>
-
-#include "types.h"
 
 namespace telemetry {
 
