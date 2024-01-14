@@ -12,8 +12,7 @@ class Gauge final : public Metric {
   std::atomic<double> value_;
 
  public:
-  Gauge(std::string_view title, std::string_view description)
-      : Metric(title, description), value_(0.0){};
+  Gauge(const MetricKey& key) : Metric(key), value_(0.0){};
 
   void set(double value);
 

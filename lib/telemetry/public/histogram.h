@@ -17,10 +17,8 @@ class Histogram final : public Metric {
   std::map<double, int64_t> buckets_;
 
  public:
-  Histogram(std::string_view           title,
-            std::string_view           description,
-            const std::vector<double>& buckets)
-      : Metric(title, description), sum(0) {
+  Histogram(const MetricKey& key, const std::vector<double>& buckets)
+      : Metric(key), sum(0) {
     for (auto bucket : buckets) {
       buckets_[bucket] = 0;
     }

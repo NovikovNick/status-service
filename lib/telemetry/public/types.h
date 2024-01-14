@@ -2,30 +2,34 @@
 #define METALHEART_TELEMETRY_TYPES_H
 
 #include <atomic>
+#include <format>
 #include <memory>
 #include <string>
 #include <unordered_map>
 
+#include "metric_key.h"
+
 namespace telemetry {
 
 class Metric {
- protected:
-  const std::string title_, description_;
-
  public:
-  Metric(std::string_view title, std::string_view description)
-      : title_(title),             //
-        description_(description)  //
-  {}
+  Metric(const MetricKey& key) : key_(key) {}
 
   virtual void collect(std::string& out) = 0;
   virtual ~Metric()                      = default;
-};
 
-struct MetricKey {
-  std::string                                  name;
-  std::string                                  description;
-  std::unordered_map<std::string, std::string> tags;
+ protected:
+  MetricKey key_;
+
+  void collectTags(std::string& out) const {
+    if (!key_.tags.empty()) {
+      out += '{';
+      for (auto [tag, val] : key_.tags) {
+        out += std::format("{}=\"{}\",", tag, val);
+      }
+      out[out.size() - 1] = '}';
+    }
+  }
 };
 
 class MetricRegistry {
@@ -34,8 +38,9 @@ class MetricRegistry {
   MetricRegistry& operator=(const MetricRegistry&) = delete;
 
  public:
-  std::unordered_map<std::string, std::shared_ptr<Metric>> metrics_;
-  static MetricRegistry&                                   instance() {
+  std::unordered_map<MetricKey, std::shared_ptr<Metric>> metrics_;
+
+  static MetricRegistry& instance() {
     static MetricRegistry inst;
     return inst;
   }
@@ -76,16 +81,14 @@ struct MetricBuilder {
     // todo: refactoring
     auto& metrics = MetricRegistry::instance().metrics_;
 
-    std::string key{key_.name};
-    if (auto it = metrics.find(key); it != metrics.end()) {
+    if (auto it = metrics.find(key_); it != metrics.end()) {
       return static_cast<Metric&>(*(it->second.get()));
     } else {
-      metrics[key] = std::make_shared<Metric>(key_.name,  //
-                                              key_.description,
-                                              std::forward<Args>(args)...);
-      return static_cast<Metric&>(*(metrics[key].get()));
+      metrics[key_] = std::make_shared<Metric>(key_,  //
+                                               std::forward<Args>(args)...);
+      return static_cast<Metric&>(*(metrics[key_].get()));
     }
-  };
+  }
 };
 }  // namespace telemetry
 #endif  // METALHEART_TELEMETRY_TYPES_H

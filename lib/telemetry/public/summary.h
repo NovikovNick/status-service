@@ -22,11 +22,10 @@ class Summary final : public Metric {
   std::vector<double>                                          quantiles_;
 
  public:
-  Summary(std::string_view           title,
-          std::string_view           description,
+  Summary(const MetricKey&           key,
           std::chrono::milliseconds  observation_time,
           const std::vector<double>& quantiles)
-      : Metric(title, description),  //
+      : Metric(key),  //
         observation_time_(observation_time),
         quantiles_(quantiles){};
 

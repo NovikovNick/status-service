@@ -12,8 +12,7 @@ class Counter final : public Metric {
   std::atomic<uint64_t> value_;
 
  public:
-  Counter(std::string_view title, std::string_view description)
-      : Metric(title, description), value_(0){};
+  Counter(const MetricKey& key) : Metric(key), value_(0){};
 
   void increment();
   void add(uint64_t value);

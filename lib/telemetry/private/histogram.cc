@@ -23,18 +23,18 @@ void Histogram::collect(std::string& out) {
 
   auto lk = std::unique_lock(mutex_);
 
-  out += std::format("# HELP {} {}\n", title_, description_);
-  out += std::format("# TYPE {} histogram\n", title_);
+  out += std::format("# HELP {} {}\n", key_.name, key_.description);
+  out += std::format("# TYPE {} histogram\n", key_.name);
 
   for (auto [backet, counter] : buckets_) {
     count += counter;
-    out += std::format("{}_bucket{{le=\"{}\"}} {}\n",  //
-                       title_,
-                       backet,
-                       counter);
+    out += std::format("{}_bucket", key_.name);
+    key_.tags["le"] = std::to_string(backet);
+    collectTags(out);
+    out += std::format(" {}\n", counter);
   }
 
-  out += std::format("{}_sum {}\n", title_, sum);
-  out += std::format("{}_count {}\n", title_, count);
+  out += std::format("{}_sum {}\n", key_.name, sum);
+  out += std::format("{}_count {}\n", key_.name, count);
 };
 }  // namespace telemetry

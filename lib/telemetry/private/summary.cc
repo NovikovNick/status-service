@@ -37,8 +37,8 @@ void Summary::collect(std::string& out) {
     }
   }
 
-  out += std::format("# HELP {} {}\n", title_, description_);
-  out += std::format("# TYPE {} summary\n", title_);
+  out += std::format("# HELP {} {}\n", key_.name, key_.description);
+  out += std::format("# TYPE {} summary\n", key_.name);
 
   for (auto quantile : quantiles_) {
     double index      = (count - 1) * quantile;
@@ -55,15 +55,14 @@ void Summary::collect(std::string& out) {
       auto d1 = tmp_vector[index_high] * (index - index_low);
       value   = d0 + d1;
     }
-
-    out += std::format("{}{{quantile=\"{}\"}} {}\n",  //
-                       title_,
-                       quantile,
-                       value);
+    out += std::format("{}", key_.name);
+    key_.tags["quantile"] = std::to_string(quantile);
+    collectTags(out);
+    out += std::format(" {}\n", value);
   }
 
-  out += std::format("{}_sum {}\n", title_, sum);
-  out += std::format("{}_count {}\n", title_, count);
+  out += std::format("{}_sum {}\n", key_.name, sum);
+  out += std::format("{}_count {}\n", key_.name, count);
 };
 
 }  // namespace telemetry
