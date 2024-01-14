@@ -6,6 +6,49 @@
 #include <iostream>
 #include <thread>
 
+#include "llhttp.h"
+
+namespace {
+
+class HttpRequest {
+  llhttp_t          parser;
+  llhttp_settings_t settings;
+
+ public:
+  std::string path;
+
+  HttpRequest() {
+    llhttp_settings_init(&settings);
+
+    settings.on_url = HttpRequest::onUrl;
+
+    llhttp_init(&parser, HTTP_BOTH, &settings);
+    parser.data = this;
+  }
+
+  static int onUrl(llhttp_t* p, const char* at, size_t len) try {
+    auto self  = static_cast<HttpRequest*>(p->data);
+    self->path = std::string{at, len};
+
+    std::cout << std::format("Path: {}\n", self->path);
+
+    return HPE_OK;
+  } catch (...) {
+    return HPE_INTERNAL;
+  }
+
+  void extractData(const char* req, int len) {
+    enum llhttp_errno err = llhttp_execute(&parser, req, len);
+    if (err != HPE_OK) {
+      std::cout << std::format("Parse error: {} {}\n",  //
+                               llhttp_errno_name(err),
+                               parser.reason);
+    }
+  }
+};
+
+}  // namespace
+
 namespace m8t {
 
 Dispatcher::Dispatcher(Router&         router,  //
@@ -27,20 +70,18 @@ void Dispatcher::start() {
       conn.handle([t0, &server](auto& buf) {
         std::string_view req(buf.data());
 
-        char method[255]{'\0'};
-        char path[255]{'\0'};
-        std::sscanf(req.data(), "%s %s HTTP/1.1", method, path);
+        HttpRequest request;
+        request.extractData(req.data(), req.size());
 
-        std::cout << std::format("{}: {}\n", method, path);
-
-        if (auto* handler = server.router_.route(path); handler != nullptr) {
+        if (auto* handler = server.router_.route(request.path);
+            handler != nullptr) {
           handler->handle(buf);
         }
 
         auto t1 = Clock::now();
         telemetry::summary()
             .name("status_service_http_request_duration_seconds")
-            .tag("path", path)
+            .tag("path", request.path)
             .description("A summary of the http request duration.")
             .observation_time(minutes{1})
             .quantiles(0.5, 0.9, 0.95, 1.0)

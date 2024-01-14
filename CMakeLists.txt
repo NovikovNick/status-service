@@ -30,7 +30,7 @@ add_executable("server"
     "src/server/tcp/connection_pool.cc"
     "src/server/tcp/connection.cc"
     "src/server/service/telemetry.cc")
-target_link_libraries("server" PRIVATE lib::telemetry)
+target_link_libraries("server" PRIVATE lib::telemetry llhttp::llhttp)
 
 # UTILITY
 
