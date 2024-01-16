@@ -1,0 +1,3 @@
+[submodule "lib/prometheus-client-cpp"]
+	path = lib/prometheus-client-cpp
+	url = https://github.com/NovikovNick/prometheus-client-cpp.git

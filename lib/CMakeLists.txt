@@ -1,1 +1,1 @@
-add_subdirectory(telemetry)
+add_subdirectory(prometheus-client-cpp)
