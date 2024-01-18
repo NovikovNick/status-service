@@ -1,18 +1,18 @@
 #ifndef METALHEART_SERVER_DISPATCHER_H
 #define METALHEART_SERVER_DISPATCHER_H
 
-#include "router.h"
+#include "http/router.h"
 #include "tcp/connection_pool.h"
 
 namespace m8t {
 
 class Dispatcher final {
-  Router&         router_;
+  http::Router&   router_;
   ConnectionPool& connection_pool_;
 
  public:
-  Dispatcher(Router&         router_,  //
-             ConnectionPool& connection_pool_);
+  Dispatcher(http::Router&   router,  //
+             ConnectionPool& connection_pool);
 
   void start();
 };

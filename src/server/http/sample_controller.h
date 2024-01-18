@@ -1,12 +1,13 @@
 #include <chrono>
 #include <cstring>
 
-#include "../types.h"
+#include "controller.h"
 
-namespace m8t {
-class SampleHttpHandler : public Handler {
+namespace m8t::http {
+
+class SampleController : public Controller {
  public:
-  void handle(Buffer& buf) const {
+  virtual void handle(const Request& request, Response& response) const {
     std::string data;
 
     data += "It works...\n";
@@ -19,7 +20,7 @@ class SampleHttpHandler : public Handler {
         "{}",
         data.size(),
         data);
-    std::strcpy(buf.data(), packet.c_str());
+    std::strcpy(response.buffer.data(), packet.c_str());
   };
 };
-}  // namespace m8t
+}  // namespace m8t::http

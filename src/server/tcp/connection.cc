@@ -10,9 +10,14 @@
 
 namespace m8t {
 
-Connection::Connection(int endpoint) : endpoint_(endpoint){};
+Connection::Connection(int endpoint)
+    : endpoint_(endpoint){
 
-Connection::Connection(Connection &&other) noexcept { *this = std::move(other); };
+      };
+
+Connection::Connection(Connection &&other) noexcept {
+  *this = std::move(other);
+};
 
 Connection &Connection::operator=(Connection &&other) noexcept {
   if (this == &other) return *this;
@@ -29,15 +34,24 @@ Connection::~Connection() {
 };
 
 void Connection::handle(Request request_handler) {
+  memset(input_buffer_.data(), 0, kBufCapacity);   // clear the buffer
+  memset(output_buffer_.data(), 0, kBufCapacity);  // clear the buffer
+
   // keep track of the amount of data sent
   int bytesRead    = 0;
   int bytesWritten = 0;
-  memset(buf_.data(), 0, kBufCapacity);  // clear the buffer
 
-  // receive a message from the client (listen)
-  bytesRead += recv(endpoint_, buf_.data(), kBufCapacity, 0);
-  request_handler(buf_);
-  bytesWritten += send(endpoint_, buf_.data(), strlen(buf_.data()), 0);
+  bytesRead += recv(endpoint_,  //
+                    input_buffer_.data(),
+                    kBufCapacity,
+                    0);
+
+  request_handler(input_buffer_, output_buffer_);
+
+  bytesWritten += send(endpoint_,  //
+                       output_buffer_.data(),
+                       strlen(output_buffer_.data()),
+                       0);
 };
 
 }  // namespace m8t

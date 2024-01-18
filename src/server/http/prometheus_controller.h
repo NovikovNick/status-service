@@ -2,14 +2,13 @@
 #include <format>
 
 #include "../service/telemetry.h"
-#include "../types.h"
+#include "controller.h"
 
-namespace m8t {
-class PrometheusHttpHandler : public Handler {
+namespace m8t::http {
+
+class PrometheusController : public Controller {
  public:
-  PrometheusHttpHandler() = default;
-
-  void handle(Buffer& buf) const {
+  void handle(const Request& request, Response& response) const {
     std::string data;
 
     telemetry::collect(data);
@@ -22,7 +21,7 @@ class PrometheusHttpHandler : public Handler {
         "{}",
         data.size(),
         data);
-    std::strcpy(buf.data(), packet.c_str());
+    std::strcpy(response.buffer.data(), packet.c_str());
   };
 };
-}  // namespace m8t
+}  // namespace m8t::http

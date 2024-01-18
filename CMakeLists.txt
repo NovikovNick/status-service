@@ -22,11 +22,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # lib::telemetry
 )
 
-
 add_executable("server" 
-    "src/tcp-server.cc" 
+    "src/http-server.cc" 
     "src/server/dispatcher.cc"
-    "src/server/router.cc"
+    "src/server/http/router.cc"
     "src/server/tcp/connection_pool.cc"
     "src/server/tcp/connection.cc"
     "src/server/service/telemetry.cc")

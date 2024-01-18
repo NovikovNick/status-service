@@ -9,8 +9,9 @@
 namespace m8t {
 
 class Connection final {
-  std::array<char, kBufCapacity> buf_;
-  int                            endpoint_;
+  Buffer input_buffer_;
+  Buffer output_buffer_;
+  int    endpoint_;
 
  public:
   explicit Connection(int endpoint_);

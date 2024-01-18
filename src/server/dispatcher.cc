@@ -2,56 +2,18 @@
 
 #include <telemetry/api.h>
 
+#include <cassert>
+#include <cstring>
 #include <format>
 #include <iostream>
+#include <span>
 #include <thread>
 
-#include "llhttp.h"
-
-namespace {
-
-class HttpRequest {
-  llhttp_t          parser;
-  llhttp_settings_t settings;
-
- public:
-  std::string path;
-
-  HttpRequest() {
-    llhttp_settings_init(&settings);
-
-    settings.on_url = HttpRequest::onUrl;
-
-    llhttp_init(&parser, HTTP_BOTH, &settings);
-    parser.data = this;
-  }
-
-  static int onUrl(llhttp_t* p, const char* at, size_t len) try {
-    auto self  = static_cast<HttpRequest*>(p->data);
-    self->path = std::string{at, len};
-
-    std::cout << std::format("Path: {}\n", self->path);
-
-    return HPE_OK;
-  } catch (...) {
-    return HPE_INTERNAL;
-  }
-
-  void extractData(const char* req, int len) {
-    enum llhttp_errno err = llhttp_execute(&parser, req, len);
-    if (err != HPE_OK) {
-      std::cout << std::format("Parse error: {} {}\n",  //
-                               llhttp_errno_name(err),
-                               parser.reason);
-    }
-  }
-};
-
-}  // namespace
+#include "http/parser.h"
 
 namespace m8t {
 
-Dispatcher::Dispatcher(Router&         router,  //
+Dispatcher::Dispatcher(http::Router&   router,  //
                        ConnectionPool& connection_pool)
     : router_(router),  //
       connection_pool_(connection_pool){};
@@ -67,15 +29,15 @@ void Dispatcher::start() {
 
     auto t0 = Clock::now();
     std::thread([t0, &server = *this, conn = std::move(conn)]() mutable {
-      conn.handle([t0, &server](auto& buf) {
-        std::string_view req(buf.data());
+      conn.handle([t0, &server](Buffer& input, Buffer& output) {
+        http::Parser    parser;
+        std::span<char> data{input.data(), strlen(input.data())};
+        auto            request = parser.extractData(data);
 
-        HttpRequest request;
-        request.extractData(req.data(), req.size());
-
-        if (auto* handler = server.router_.route(request.path);
-            handler != nullptr) {
-          handler->handle(buf);
+        http::Route route{request.method, std::string{request.path}};
+        if (auto* c = server.router_.route(route); c != nullptr) {
+          http::Response response{output};
+          c->handle(request, response);
         }
 
         auto t1 = Clock::now();
